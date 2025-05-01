@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Reminder with Calendar</title>
+    <style>
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #4CAF50;
+        }
+
+        .time, .countdown, .tracker {
+            margin: 20px 0;
+        }
+
+        #time {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        #countdown {
+            font-size: 1.5em;
+            color: red;
+        }
+
+        #tracker {
+            font-size: 1.2em;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .calendar {
+            margin-top: 30px;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .today {
+            background-color: #ffcccb;
+        }
+
+        .holiday {
+            background-color: #ffeb3b;
+        }
+
+        .holiday-name {
+            font-size: 0.8em;
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Water Reminder</h1>
+
+        <div class="time">
+            <span id="time"></span>
+        </div>
+
+        <div class="countdown">
+            <p>Next reminder in: <span id="countdown">15:00</span> minutes</p>
+        </div>
+
+        <div class="tracker">
+            <p>You have drunk water today: <span id="tracker-count">0</span> times</p>
+        </div>
+
+        <button onclick="setTimer()">Set My Own Timer</button>
+
+        <div class="calendar" id="calendar"></div>
+    </div>
+
+    <script>
+        // Initialize variables
+        let reminderTime = 15 * 60;  // 15 minutes in seconds
+        let countdownInterval;
+        let trackerCount = 0;
+
+        // Philippine holidays for 2025
+        const holidays = {
+            "2025-01-01": "New Year's Day",
+            "2025-04-09": "Araw ng Kagitingan",
+            "2025-04-17": "Maundy Thursday",
+            "2025-04-18": "Good Friday",
+            "2025-04-19": "Black Saturday",
+            "2025-05-01": "Labor Day",
+            "2025-06-12": "Independence Day",
+            "2025-08-21": "Ninoy Aquino Day",
+            "2025-08-25": "National Heroes Day",
+            "2025-11-01": "All Saints' Day",
+            "2025-11-30": "Bonifacio Day",
+            "2025-12-08": "Feast of the Immaculate Conception",
+            "2025-12-25": "Christmas Day",
+            "2025-12-30": "Rizal Day"
+        };
+
+        // Update the current time in 12-hour format
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hour12 = hours % 12 || 12;
+            const formattedTime = `${hour12}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+            document.getElementById("time").textContent = formattedTime;
+        }
+
+        // Start the countdown timer
+        function startCountdown() {
+            countdownInterval = setInterval(() => {
+                if (reminderTime > 0) {
+                    reminderTime--;
+                    const minutesRemaining = Math.floor(reminderTime / 60);
+                    const secondsRemaining = reminderTime % 60;
+                    document.getElementById("countdown").textContent = `${minutesRemaining}:${secondsRemaining < 10 ? '0' + secondsRemaining : secondsRemaining}`;
+                } else {
+                    alert("Time to drink water!");
+                    trackerCount++;
+                    document.getElementById("tracker-count").textContent = trackerCount;
+                    reminderTime = 15 * 60; // Reset the reminder time to 15 minutes
+                    document.getElementById("countdown").textContent = `15:00`;
+                }
+            }, 1000);
+        }
+
+        // Set a custom timer for the reminder
+        function setTimer() {
+            const userTime = prompt("Enter reminder interval (in minutes):", 15);
+            if (userTime && !isNaN(userTime) && userTime > 0) {
+                reminderTime = userTime * 60; // Convert to seconds
+                clearInterval(countdownInterval); // Reset countdown
+                startCountdown();
+                alert(`Reminder set for every ${userTime} minutes!`);
+            } else {
+                alert("Please enter a valid number.");
+            }
+        }
+
+        // Generate the calendar for the current month
+        function generateCalendar() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDay = firstDay.getDay();
+
+            let calendarHTML = `<h3>${now.toLocaleString('default', { month: 'long' })} ${currentYear}</h3>`;
+            calendarHTML += '<table>';
+            calendarHTML += '<tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr><tr>';
+
+            // Add empty cells before the first day of the month
+            for (let i = 0; i < startDay; i++) {
+                calendarHTML += '<td></td>';
+            }
+
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                if ((startDay + day - 1) % 7 === 0 && day !== 1) {
+                    calendarHTML += '</tr><tr>';
+                }
+
+                const currentDate = new Date();
+                const currentDateString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+                let cellClass = '';
+                let holidayName = '';
+
+                if (currentDate.getDate() === day && currentDate.getMonth() === currentMonth && currentDate.getFullYear() === currentYear) {
+                    cellClass = 'today';
+                }
+
+                if (holidays[currentDateString]) {
+                    cellClass = 'holiday';
+                    holidayName = holidays[currentDateString];
+                }
+
+                calendarHTML += `<td class="${cellClass}">${day}<br><span class="holiday-name">${holidayName}</span></td>`;
+            }
+
+            calendarHTML += '</tr></table>';
+            document.getElementById("calendar").innerHTML = calendarHTML;
+        }
+
+        // Initialize the app
+        function init() {
+            updateTime(); // Show initial time
+            setInterval(updateTime, 60000); // Update time every minute
+            startCountdown(); // Start the reminder countdown
+            generateCalendar(); // Generate the calendar
+        }
+
+        init();
+    </script>
+
+</body>
+</html>
